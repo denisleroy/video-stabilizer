@@ -1,0 +1,5 @@
+/build/
+/compile_commands.json
+/.cache/
+*.mp4
+*.csv
