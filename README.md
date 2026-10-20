@@ -48,8 +48,7 @@ cmake --preset release && cmake --build --preset release
 ## Usage
 
 ```sh
-scripts/make_shaky.sh shaky.mp4            # synthetic test clip
-build/release/stabilize shaky.mp4 out.mp4
+stabilize shaky_input.mp4 smooth_output.mp4
 ```
 
 The first line of output shows the decoder, encoder and thread count chosen.
@@ -92,20 +91,3 @@ Measured on an i9-14900HX (32 threads) with Intel UHD (Raptor Lake) graphics, us
 - Throughput varies by roughly ±15% between runs on laptops (shared CPU/GPU power and
   thermals), so benchmark with repeated, interleaved runs.
 
-## Layout
-
-```
-src/media/   FFmpeg demux/decode with optional hwaccel (VideoReader), encoder
-             selection/encode/mux (VideoWriter)
-src/stab/    motion estimation, path smoothing, warp matrices, Y/UV-plane warping
-src/util/    thread pool, bounded queue
-src/main.cpp CLI and the streaming pipeline
-```
-
-## Ideas for later
-
-- L1-optimal camera paths (Grundmann et al. 2011) with a crop-window constraint
-- Adaptive zoom computed from the largest correction
-- Rolling-shutter correction (mesh warps)
-- Gyro metadata input (GoPro GPMF, Sony, DJI)
-- Keeping 10-bit/HDR sources at 10 bits (currently converted to 8-bit 4:2:0)
