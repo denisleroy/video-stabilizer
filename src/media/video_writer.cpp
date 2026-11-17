@@ -1,5 +1,6 @@
 #include "media/video_writer.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -47,6 +48,11 @@ bool attachVaapiFrames(AVCodecContext* enc) {
   return true;
 }
 
+#ifdef __APPLE__
+// VideoToolbox quality (1-100, higher is better) for a crf-like value.
+int videotoolboxQuality(int crf) { return std::clamp(100 - 2 * crf, 1, 100); }
+#endif
+
 }  // namespace
 
 VideoWriter::VideoWriter(const std::string& path, int width, int height, AVRational frameRate,
@@ -59,7 +65,11 @@ VideoWriter::VideoWriter(const std::string& path, int width, int height, AVRatio
   if (opts.encoder == "auto") {
     const bool hevc = opts.codec == "hevc";
     if (!hevc && opts.codec != "h264") throw std::runtime_error("unknown codec " + opts.codec);
+#ifdef __APPLE__
+    candidates.push_back(opts.codec + "_videotoolbox");
+#else
     for (const char* hw : {"_nvenc", "_vaapi", "_qsv"}) candidates.push_back(opts.codec + hw);
+#endif
     candidates.push_back(hevc ? "libx265" : "libx264");
   } else {
     candidates.push_back(opts.encoder);
@@ -167,6 +177,13 @@ bool VideoWriter::openEncoder(const AVCodec* codec, int width, int height, AVRat
       av_dict_set(&o, "rc", "vbr", 0);
       av_dict_set(&o, "cq", quality.c_str(), 0);
       enc->bit_rate = 0;
+#ifdef __APPLE__
+    } else if (endsWith(name, "_videotoolbox")) {
+      // Constant-quality mode: q is 1-100, higher is better. Map from the
+      // crf-like scale so the default (20) looks roughly like x264 crf 20.
+      enc->flags |= AV_CODEC_FLAG_QSCALE;
+      enc->global_quality = videotoolboxQuality(opts.quality) * FF_QP2LAMBDA;
+#endif
     } else if (endsWith(name, "_qsv")) {
       enc->global_quality = opts.quality;  // ICQ
       if (!opts.preset.empty()) av_dict_set(&o, "preset", opts.preset.c_str(), 0);

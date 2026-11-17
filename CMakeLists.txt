@@ -10,7 +10,13 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc video calib3d)
+# OpenCV 5 moved estimateAffinePartial2D from calib3d into geometry, and
+# goodFeaturesToTrack from imgproc into features. Each major version's config
+# only accepts its own major, so try 5 then 4.
+find_package(OpenCV 5 QUIET COMPONENTS core imgproc video geometry features)
+if(NOT OpenCV_FOUND)
+  find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc video calib3d)
+endif()
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswscale)

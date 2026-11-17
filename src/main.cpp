@@ -44,15 +44,24 @@ void printUsage(const char* argv0) {
             << "  --zoom Z          zoom factor to hide borders (default 1.1)\n"
             << "\n"
             << "Encoding:\n"
+#ifdef __APPLE__
+            << "  --encoder E       auto (default: videotoolbox > x264/x265) or an\n"
+            << "                    FFmpeg encoder name, e.g. libx264, h264_videotoolbox\n"
+#else
             << "  --encoder E       auto (default: nvenc > vaapi > qsv > x264/x265) or an\n"
             << "                    FFmpeg encoder name, e.g. libx264, h264_vaapi\n"
+#endif
             << "  --codec C         h264 (default) or hevc, used by --encoder auto\n"
             << "  --quality N       crf/cq/qp, lower is better (default 20)\n"
             << "  --preset P        encoder preset (default: medium for x264/x265, p5 for nvenc)\n"
             << "  --no-audio        drop the audio track\n"
             << "\n"
             << "Resources:\n"
+#ifdef __APPLE__
+            << "  --hwdec H         auto (default: software), none, videotoolbox\n"
+#else
             << "  --hwdec H         auto (default: cuda, else software), none, vaapi, cuda\n"
+#endif
             << "  --threads N       worker threads for analysis and warping (default: all cores)\n"
             << "\n"
             << "  --trajectory F    write raw and smoothed camera path to CSV file F\n"

@@ -21,7 +21,8 @@ decode thread ──> motion estimation ──> path smoothing ──> warp (+ G
 - **Warp:** each frame is moved by `smoothed − raw` about the centre, plus `--zoom` to
   hide borders. The warp works directly on the Y and UV planes, with no RGB round trip
   and correct chroma siting. Frames are uploaded to the GPU inside the pool.
-- **Encode:** hardware first (`<codec>_nvenc` → `_vaapi` → `_qsv` → libx264/libx265).
+- **Encode:** hardware first (`<codec>_nvenc` → `_vaapi` → `_qsv` → libx264/libx265; on
+  macOS, `<codec>_videotoolbox` → libx264/libx265).
   Audio is stream-copied, and rotation metadata and colour properties are kept.
 - **Inputs** other than 8-bit 4:2:0 (10-bit, 4:2:2, 4:4:4) are converted with
   multithreaded swscale.
@@ -37,6 +38,8 @@ Hardware video (optional):
 - NVIDIA: the proprietary driver (`akmod-nvidia` from RPM Fusion), for NVDEC and NVENC
 
 On Debian/Ubuntu: `libopencv-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev`.
+
+On macOS (Homebrew): `brew install cmake ninja pkgconf opencv ffmpeg`. OpenCV 4 and 5 both work.
 
 ## Build
 
@@ -59,9 +62,9 @@ The first line of output shows the decoder, encoder and thread count chosen.
 | `--zoom Z` | 1.1 | zoom used to hide black borders |
 | `--encoder E` | auto | `auto`, or an FFmpeg encoder name (`libx264`, `h264_vaapi`, `hevc_nvenc`, …) |
 | `--codec C` | h264 | `h264` or `hevc`, for `--encoder auto` |
-| `--quality N` | 20 | crf (x264/x265), cq (NVENC), qp (VAAPI), ICQ (QSV); lower is better |
+| `--quality N` | 20 | crf (x264/x265), cq (NVENC), qp (VAAPI), ICQ (QSV), `100 − 2N` (VideoToolbox); lower is better |
 | `--preset P` | | encoder preset (default `medium` for x264/x265, `p5` for NVENC) |
-| `--hwdec H` | auto | `auto` (CUDA if present, else software), `none`, `vaapi`, `cuda` |
+| `--hwdec H` | auto | `auto` (CUDA if present, else software; software on macOS), `none`, `vaapi`, `cuda`, `videotoolbox` |
 | `--threads N` | all cores | worker threads for motion estimation and warping |
 | `--no-audio` | | drop the audio |
 | `--trajectory F` | | write the raw and smoothed path as CSV |
@@ -88,6 +91,9 @@ Measured on an i9-14900HX (32 threads) with Intel UHD (Raptor Lake) graphics, us
   without CUDA modules.
 - NVENC is preferred automatically once an NVIDIA driver is installed. With NVDEC
   (`--hwdec auto`), decoding moves off the CPU as well.
+- On an M1 Pro (8 threads), the same 4K clip takes 11.2 s (54 fps) with
+  h264_videotoolbox, the same as FFmpeg CLI decode → h264_videotoolbox (11.1 s), versus
+  22.3 s with libx264. VideoToolbox decoding is not the default because it was no faster.
 - Throughput varies by roughly ±15% between runs on laptops (shared CPU/GPU power and
   thermals), so benchmark with repeated, interleaved runs.
 

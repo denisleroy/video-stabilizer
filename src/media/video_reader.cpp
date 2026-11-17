@@ -49,8 +49,12 @@ VideoReader::VideoReader(const std::string& path, const std::string& hwdec) {
   if (hwdec == "auto") {
     // NVDEC is a dedicated engine, so it never slows the encoder. VAAPI is not
     // tried: on an iGPU it competes with the hardware encoder, and measured
-    // slower than software decoding on a many-core CPU.
+    // slower than software decoding on a many-core CPU. VideoToolbox decoding
+    // (macOS) is not tried either: the VideoToolbox encoder is the bottleneck,
+    // and it measured no faster than software decoding on an M1 Pro.
+#ifndef __APPLE__
     tryHwDevice(codec, AV_HWDEVICE_TYPE_CUDA);
+#endif
   } else if (hwdec != "none") {
     const AVHWDeviceType type = av_hwdevice_find_type_by_name(hwdec.c_str());
     if (type == AV_HWDEVICE_TYPE_NONE || !tryHwDevice(codec, type)) {

@@ -1,8 +1,17 @@
 #include "stab/motion.hpp"
 
-#include <opencv2/calib3d.hpp>
+#include <opencv2/core/version.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
+
+// OpenCV 5 moved goodFeaturesToTrack to features and estimateAffinePartial2D
+// to geometry; in OpenCV 4 they are in imgproc and calib3d.
+#if CV_VERSION_MAJOR >= 5
+#include <opencv2/features.hpp>
+#include <opencv2/geometry.hpp>
+#else
+#include <opencv2/calib3d.hpp>
+#endif
 
 #include <cmath>
 #include <vector>
